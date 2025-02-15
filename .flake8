@@ -1,0 +1,19 @@
+[flake8]
+max-line-length = 88
+exclude =
+        .git,
+        alembic,
+        .venv,
+        __pycache__,
+        docs,
+        build,
+        dist
+        .tox
+extend-immutable-calls =
+    fastapi.Depends,
+classmethod-decorators =
+    field_validator,
+    model_validator,
+    classmethod
+    directive
+extend-ignore = E203
