@@ -24,6 +24,8 @@ class Database:
             url_ro: str | None = None,
             echo: bool = False,
             pool_size: int = 5,
+            pool_timeout: int = 30,
+            pool_recycle: int = 1800,
             max_overflow: int = 10,
             expire_on_commit: bool = False,
             pool_pre_ping: bool = True,
@@ -38,6 +40,8 @@ class Database:
             pool_size=pool_size,
             max_overflow=max_overflow,
             pool_pre_ping=pool_pre_ping,
+            pool_timeout=pool_timeout,
+            pool_recycle=pool_recycle,
             connect_args={
                 "server_settings": {"application_name": application_name},
             },

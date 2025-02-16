@@ -45,7 +45,7 @@ class MarketService:
         }
 
     async def create(self, payload: MarketCreateSchema) -> MarketSchema:
-        async with self.db.session() as session:
+        async with self.db.session() as session, session.begin():
             stmt = (
                 sa.Select(Market)
                 .filter_by(currency=payload.currency, kind=payload.kind)
@@ -56,9 +56,8 @@ class MarketService:
 
             # Если в БД ещё нет данных, просто создаём первую запись
             if not last_record:
-                stmt = sa.insert(Market).values(**payload.model_dump()).returning(Market)
+                stmt = sa.insert(Market).values(**payload.model_dump())
                 market: MarketSchema = await self.repository.item(session=session, statement=stmt)
-                await session.commit()
                 return market
 
             if "b" in payload.data and "a" in payload.data:
@@ -69,9 +68,8 @@ class MarketService:
                     return last_record
 
             # Сохраняем новый снимок, если есть изменения
-            stmt = sa.insert(Market).values(**payload.model_dump()).returning(Market)
+            stmt = sa.insert(Market).values(**payload.model_dump())
             market = await self.repository.item(session=session, statement=stmt)
-            await session.commit()
         return market
 
 
