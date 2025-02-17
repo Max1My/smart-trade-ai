@@ -3,6 +3,7 @@
 import datetime
 
 import sqlalchemy as sa
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.models.base import Base
@@ -23,4 +24,5 @@ class Market(Base):
     currency: Mapped[str] = mapped_column(sa.String(20))
     created: Mapped[datetime.datetime] = mapped_column(sa.DateTime, default=datetime.datetime.now(), nullable=False)
     kind: Mapped[str] = mapped_column(sa.String)
-    data: Mapped[dict] = mapped_column(sa.JSON)
+    data: Mapped[dict] = mapped_column(JSONB, nullable=False)
+

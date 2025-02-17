@@ -1,18 +1,18 @@
-"""init_models
+"""init
 
-Revision ID: e7edf39d0378
+Revision ID: 7e79e1a06798
 Revises: 
-Create Date: 2025-02-15 01:31:08.796672
+Create Date: 2025-02-17 14:42:51.936069
 
 """
 from typing import Sequence
 
 from alembic import op
 import sqlalchemy as sa
-
+from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision: str = 'e7edf39d0378'
+revision: str = '7e79e1a06798'
 down_revision: str | None = None
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
@@ -34,7 +34,7 @@ def upgrade() -> None:
     sa.Column('currency', sa.String(length=20), nullable=False),
     sa.Column('created', sa.DateTime(), nullable=False),
     sa.Column('kind', sa.String(), nullable=False),
-    sa.Column('data', sa.JSON(), nullable=False),
+    sa.Column('data', postgresql.JSONB(astext_type=sa.Text()), nullable=False),
     sa.PrimaryKeyConstraint('id'),
     schema='smart_trade_ai'
     )

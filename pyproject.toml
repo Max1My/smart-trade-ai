@@ -22,6 +22,7 @@ alembic = "^1.14.1"
 asyncpg = "^0.30.0"
 greenlet = "^3.1.1"
 pybit = "^5.9.0"
+redis = "^5.2.1"
 
 [tool.poetry.group.dev.dependencies]
 commitizen = "^3.29.1"

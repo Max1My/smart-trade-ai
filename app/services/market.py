@@ -1,11 +1,15 @@
 """."""
+import logging
 
 import sqlalchemy as sa
+from sqlalchemy.dialects.postgresql import insert
 
 from app.repositories.db import DBRepository
 from app.resources.database import Database
 from app.schemas.market import MarketSchema, MarketCreateSchema
 from app.models.market import Market
+
+logger = logging.getLogger(__name__)
 
 
 class MarketService:
@@ -44,32 +48,12 @@ class MarketService:
             'asks': process_side(prev_data['a'], new_data['a']),
         }
 
-    async def create(self, payload: MarketCreateSchema) -> MarketSchema:
-        async with self.db.session() as session, session.begin():
+    async def create(self, payload: MarketCreateSchema):
+        async with self.db.session() as session:
             stmt = (
-                sa.Select(Market)
-                .filter_by(currency=payload.currency, kind=payload.kind)
-                .order_by(Market.created.desc())
-                .limit(1)
+                insert(Market)
+                .values(payload.model_dump())
             )
-            last_record: MarketSchema = await self.repository.item(session=session, statement=stmt)
-
-            # Если в БД ещё нет данных, просто создаём первую запись
-            if not last_record:
-                stmt = sa.insert(Market).values(**payload.model_dump())
-                market: MarketSchema = await self.repository.item(session=session, statement=stmt)
-                return market
-
-            if "b" in payload.data and "a" in payload.data:
-                diff = self.compare_orderbooks(prev_data=last_record.data, new_data=payload.data)
-
-                # Если нет изменений, не записываем дубликат
-                if not any(diff[key][change] for key in ["bids", "asks"] for change in ["added", "removed", "updated"]):
-                    return last_record
-
-            # Сохраняем новый снимок, если есть изменения
-            stmt = sa.insert(Market).values(**payload.model_dump())
-            market = await self.repository.item(session=session, statement=stmt)
-        return market
-
-
+            # Выполняем запрос без использования scalars, так как он не возвращает строки.
+            await session.execute(stmt)
+            await session.commit()

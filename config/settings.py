@@ -21,6 +21,12 @@ class DBSettings(BaseSettings):
     echo: bool = False
 
 
+class RedisSettings(BaseSettings):
+    """Redis settings."""
+
+    password: str = ""
+
+
 class Settings(BaseSettings):
     """CTR settings."""
 
@@ -33,3 +39,4 @@ class Settings(BaseSettings):
     debug: bool = False
     db: DBSettings = DBSettings()
     bybit: BybitSettings = BybitSettings()
+    redis: RedisSettings = RedisSettings()
