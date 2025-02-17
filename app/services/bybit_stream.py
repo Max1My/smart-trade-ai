@@ -9,14 +9,11 @@ from app.services.market import MarketService
 
 logger = logging.getLogger(__name__)
 
-# TOP_20_SYMBOLS = [
-#     "BTCUSDT", "ETHUSDT", "BNBUSDT", "XRPUSDT", "SOLUSDT",
-#     "ADAUSDT", "DOGEUSDT", "MATICUSDT", "DOTUSDT", "LTCUSDT",
-#     "AVAXUSDT", "LINKUSDT", "ATOMUSDT", "XMRUSDT",
-#     "ETCUSDT", "BCHUSDT", "NEARUSDT", "APTUSDT", "FILUSDT"
-# ]
 TOP_20_SYMBOLS = [
-"BTCUSDT"
+    "BTCUSDT", "ETHUSDT", "BNBUSDT", "XRPUSDT", "SOLUSDT",
+    "ADAUSDT", "DOGEUSDT", "MATICUSDT", "DOTUSDT", "LTCUSDT",
+    "AVAXUSDT", "LINKUSDT", "ATOMUSDT", "XMRUSDT",
+    "ETCUSDT", "BCHUSDT", "NEARUSDT", "APTUSDT", "FILUSDT"
 ]
 
 
@@ -112,7 +109,10 @@ class WebSocketService:
         while self.is_running:
             try:
                 for symbol in self.symbols:
-                    self.bybit_ws.subscribe_orderbook(symbol, self._handle_sync_message)
+                    self.bybit_ws.subscribe_orderbook(symbol=symbol, callback=self._handle_sync_message)
+                    self.bybit_ws.subscribe_trades(symbol=symbol, callback=self._handle_sync_message)
+                    self.bybit_ws.subscribe_candles(symbol=symbol, interval=1, callback=self._handle_sync_message)
+                    self.bybit_ws.subscribe_liquidations(symbol=symbol, callback=self._handle_sync_message)
                     await asyncio.sleep(5)
 
                 logger.info(f"✅ Подписаны на {len(self.symbols)} валютных пар")
