@@ -5,6 +5,7 @@ from dependency_injector.providers import Configuration, Provider, Singleton, Re
 
 from app.resources.bybit import BybitWebSocket, BybitRest
 from app.resources.database import Database
+from app.resources.redis_client import RedisClient
 
 
 class GatewaysContainer(DeclarativeContainer):
@@ -17,10 +18,10 @@ class GatewaysContainer(DeclarativeContainer):
         url_rw=config.db.url_rw,
         url_ro=config.db.url_ro,
         echo=config.db.echo,
-        pool_size=30,
-        pool_timeout=10,
-        pool_recycle=1800,
-        max_overflow=10,
+        pool_size=50,
+        pool_timeout=30,
+        pool_recycle=3600,
+        max_overflow=20,
         expire_on_commit=False,
         pool_pre_ping=True,
         application_name="smart_trade_ai",
@@ -33,4 +34,7 @@ class GatewaysContainer(DeclarativeContainer):
         api_key=config.bybit.api_key,
         api_secret=config.bybit.api_secret
     )
-    bot: Provider[aiogram.Bot] = Singleton(aiogram.Bot, token=config.bot.token)
+    redis: Provider[RedisClient] = Singleton(
+        RedisClient,
+        password=config.redis.password
+    )

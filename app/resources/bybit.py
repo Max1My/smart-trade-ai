@@ -5,7 +5,7 @@ from pybit.unified_trading import HTTP
 class BybitWebSocket:
     def __init__(self):
         """Инициализация WebSocket с нужным адресом"""
-        self.ws = WebSocket(testnet=False, channel_type="linear")
+        self.ws = WebSocket(testnet=True, channel_type="linear")
 
     def subscribe_orderbook(self, symbol: str, callback, depth: int = 50):
         """Подписка на стакан"""

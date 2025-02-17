@@ -35,5 +35,6 @@ class ServicesContainer(DeclarativeContainer):
     bybit_stream: Provider[WebSocketService] = Singleton(
         WebSocketService,
         market_service=market,
-        bybit_ws=gateways.bybit_websocket
+        bybit_ws=gateways.bybit_websocket,
+        redis_client=gateways.redis,
     )
