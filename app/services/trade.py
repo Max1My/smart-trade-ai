@@ -1,42 +1,83 @@
+import datetime
+import json
 import logging
+import sqlalchemy as sa
 
-from app.repositories.trade import TradeRepository
-from app.resources.bybit import BybitWebSocket, BybitRest
+from app.models import Trade, TradeRecommendation
+from app.repositories.db import DBRepository
+from app.resources.database import Database
+from app.schemas.market import AggregatedMarketData
+from app.schemas.trade import TradeSchema, TradeRecommendationSchema
+from app.services.chat_gpt import ChatGPTService
+from app.services.market import MarketService
 
 logger = logging.getLogger(__name__)
 
 
 class TradeService:
+    db: Database
+    repository_trade: DBRepository[Trade, TradeSchema]
+    repository_trade_recommendation: DBRepository[TradeRecommendation, TradeRecommendationSchema]
+    chatgpt_service: ChatGPTService
+    market_service: MarketService
+
     def __init__(
             self,
-            bybit_websocket: BybitWebSocket,
-            bybit_rest: BybitRest,
-            repository: TradeRepository
+            chatgpt_service: ChatGPTService,
+            repository_trade: DBRepository[Trade, TradeSchema],
+            repository_trade_recommendation: DBRepository[TradeRecommendation, TradeRecommendationSchema],
+            market_service: MarketService
     ):
-        self.bybit_websocket = bybit_websocket
-        self.bybit_rest = bybit_rest
-        self.repository = repository
+        self.chatgpt_service = chatgpt_service
+        self.repository_trade = repository_trade
+        self.repository_trade_recommendation = repository_trade_recommendation
+        self.market_service = market_service
 
-    def start_streams(self, symbol: str):
-        """Запускаем подписки на Bybit WebSocket"""
-        self.bybit_websocket.subscribe_orderbook(symbol, self.handle_orderbook)
-        self.bybit_websocket.subscribe_candles(symbol, 1, self.handle_candles)
-        self.bybit_websocket.subscribe_trades(symbol, self.handle_trades)
+    async def analyze_and_save_recommendation(self, currency: str) -> TradeRecommendationSchema:
+        """
+        Вызывает ChatGPT для анализа агрегированных данных и сохраняет результат как рекомендацию в базе.
 
-    def handle_orderbook(self, message):
-        """Обрабатываем данные стакана"""
-        symbol = message["data"]["s"]
-        self.repository.save_orderbook(symbol, message)
-        logger.info(f"Orderbook updated for {symbol}")
+        :param aggregated_data: Словарь с агрегированными данными за выбранный период.
+        :param currency: Валютная пара, для которой проводится анализ.
+        :return: Объект TradeRecommendation, сохранённый в базе данных.
+        """
+        try:
+            async with self.db.session() as session:
+                aggregated_data: AggregatedMarketData = await self.market_service.get_aggregated_market_data(
+                    currency=currency,
+                    session=session
+                )
+                # Вызываем ChatGPT для анализа агрегированных данных.
+                response = await self.chatgpt_service.analyze(aggregated_data.model_dump())
+                logger.info("Получен ответ от ChatGPT")
 
-    def handle_candles(self, message):
-        """Обрабатываем свечные данные"""
-        symbol = message["data"]["s"]
-        self.repository.save_candles(symbol, message)
-        logger.info(f"Candles updated for {symbol}")
+                # Пытаемся распарсить ответ как JSON.
+                try:
+                    parsed = json.loads(response)
+                except Exception as e:
+                    logger.error(f"Ошибка парсинга ответа ChatGPT: {e}")
+                    # Если парсинг не удался, используем весь текст ответа как рекомендацию,
+                    # а уровень уверенности ставим по умолчанию.
+                    parsed = {
+                        "recommended_action": response,
+                        "confidence": 0.5,
+                        "data": {}
+                    }
 
-    def handle_trades(self, message):
-        """Обрабатываем историю сделок"""
-        symbol = message["data"]["s"]
-        self.repository.save_trade(symbol, message)
-        logger.info(f"Trade history updated for {symbol}")
+                stmt = sa.insert(TradeRecommendation).values(
+                    currency=currency,
+                    recommended=datetime.datetime.now(),
+                    recommended_action=parsed.get("recommended_action", ""),
+                    confidence=parsed.get("confidence", 0.0),
+                    data=parsed.get("data", {})
+                ).returning(TradeRecommendation)
+                recommendation: TradeRecommendationSchema = await self.repository_trade_recommendation.item(
+                    session=session,
+                    statement=stmt
+                )
+                logger.info(f"Рекомендация для {currency} сохранена в базе")
+                return recommendation
+
+        except Exception as e:
+            logger.error(f"Ошибка в анализе и сохранении рекомендации: {e}")
+            raise
