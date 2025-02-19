@@ -28,7 +28,7 @@ async def start_analyze(
 
     container.gateways.scheduler.init()
     scheduler = container.services.scheduler()
-    await scheduler.short_term_analysis()
+    scheduler.start()
 
     try:
         while True:

@@ -42,3 +42,11 @@ class TradeCreateSchema(BaseSchema):
     status: str
     exit_price: float
     pnl: float
+
+
+class TradeRecommendationsCreateSchema(BaseSchema):
+    currency: str
+    recommended: datetime.datetime
+    recommended_action: str
+    confidence: float
+    data: dict

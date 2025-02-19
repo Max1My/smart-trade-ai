@@ -36,7 +36,7 @@ class SchedulerService:
         for currency in TOP_20_SYMBOLS:
             try:
                 logger.info(f"[Краткосрочный] Запуск анализа рыночных данных для {currency}")
-                recommendation: TradeRecommendationSchema = await self.trade_service.analyze_and_save_recommendation(currency, minutes=5)
+                recommendation: TradeRecommendationSchema = await self.trade_service.analyze_and_save_final_recommendation(currency, minutes=5)
                 logger.info(f"[Краткосрочный] Рекомендация для {currency} получена и сохранена: {recommendation.id}")
             except Exception as e:
                 logger.error(f"[Краткосрочный] Ошибка анализа для {currency}: {e}")
@@ -49,7 +49,7 @@ class SchedulerService:
             try:
                 logger.info(f"[Долгосрочный] Запуск анализа рыночных данных для {currency}")
                 # Например, агрегируем данные за последние 1440 минут (24 часа)
-                recommendation: TradeRecommendationSchema = await self.trade_service.analyze_and_save_recommendation(currency, minutes=1440)
+                recommendation: TradeRecommendationSchema = await self.trade_service.analyze_and_save_final_recommendation(currency, minutes=1440)
                 logger.info(f"[Долгосрочный] Рекомендация для {currency} получена и сохранена: {recommendation.id}")
             except Exception as e:
                 logger.error(f"[Долгосрочный] Ошибка анализа для {currency}: {e}")
