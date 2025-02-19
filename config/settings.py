@@ -27,6 +27,12 @@ class RedisSettings(BaseSettings):
     password: str = ""
 
 
+class ChatGPTSettings(BaseSettings):
+    """ChatGPT settings."""
+
+    api_key: str = ""
+
+
 class Settings(BaseSettings):
     """CTR settings."""
 
@@ -40,3 +46,4 @@ class Settings(BaseSettings):
     db: DBSettings = DBSettings()
     bybit: BybitSettings = BybitSettings()
     redis: RedisSettings = RedisSettings()
+    chatgpt: ChatGPTSettings = ChatGPTSettings()

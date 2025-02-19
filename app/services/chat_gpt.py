@@ -1,3 +1,5 @@
+import json
+
 import openai
 import logging
 
@@ -28,23 +30,24 @@ class ChatGPTService:
         :return: Ответ от ChatGPT с торговыми рекомендациями.
         """
         prompt = self._create_prompt(aggregated_data)
-        try:
-            # Асинхронный вызов ChatGPT API (метод acreate доступен в новых версиях openai)
-            response = await openai.ChatCompletion.acreate(
-                model=self.model,
-                messages=[
-                    {"role": "system",
-                     "content": "Ты являешься финансовым аналитиком, специализирующимся на криптовалютном рынке."},
-                    {"role": "user", "content": prompt}
-                ],
-                temperature=0.7,
-            )
-            analysis = response.choices[0].message.content.strip()
-            logger.info("Успешно получен ответ от ChatGPT")
-            return analysis
-        except Exception as e:
-            logger.error(f"Ошибка при вызове ChatGPT API: {e}")
-            return "Ошибка при вызове ChatGPT API"
+        logger.info(f'prompt: {prompt}')
+        # try:
+        #     # Асинхронный вызов ChatGPT API (метод acreate доступен в новых версиях openai)
+        #     response = await openai.ChatCompletion.acreate(
+        #         model=self.model,
+        #         messages=[
+        #             {"role": "system",
+        #              "content": "Ты являешься финансовым аналитиком, специализирующимся на криптовалютном рынке."},
+        #             {"role": "user", "content": prompt}
+        #         ],
+        #         temperature=0.7,
+        #     )
+        #     analysis = response.choices[0].message.content.strip()
+        #     logger.info("Успешно получен ответ от ChatGPT")
+        #     return analysis
+        # except Exception as e:
+        #     logger.error(f"Ошибка при вызове ChatGPT API: {e}")
+        #     return "Ошибка при вызове ChatGPT API"
 
     def _create_prompt(self, aggregated_data: dict) -> str:
         """
@@ -54,12 +57,14 @@ class ChatGPTService:
         :return: Строка запроса для ChatGPT.
         """
         # Преобразуем данные в строку. Здесь можно использовать json.dumps с отступами для лучшей читаемости.
-        data_str = str(aggregated_data)
+        data_str = json.dumps(aggregated_data, default=str, indent=2)
         prompt = (
-            f"Данные анализа биржевых данных:\n{data_str}\n\n"
-            "Проведи анализ с учетом следующих технических индикаторов: SMA, EMA, RSI, MACD, ATR.\n"
-            "Определи свечные паттерны: Hammer, Inverted Hammer, Bullish Engulfing, Three White Soldiers, Piercing Line, "
-            "Hanging Man, Bearish Engulfing, Three Black Crows, Dark Cloud Cover, Doji.\n"
+            f"Вот данные анализа: {data_str}\n\n"
+            "Проведи анализ с учетом следующих технических индикаторов: "
+            "SMA (Simple Moving Average), EMA (Exponential Moving Average), RSI (Relative Strength Index), "
+            "MACD (Moving Average Convergence Divergence), ATR (Average True Range).\n"
+            "Определи свечные паттерны: Hammer, Inverted Hammer, Bullish Engulfing, Three White Soldiers, "
+            "Piercing Line, Hanging Man, Bearish Engulfing, Three Black Crows, Dark Cloud Cover, Doji.\n"
             "Оцени вероятность роста и падения цены в процентах и предоставь подробные торговые рекомендации с учетом использования плеча.\n"
             "Предоставь ответ в структурированном виде с указанием ключевых параметров."
         )

@@ -2,6 +2,7 @@
 import aiogram
 from dependency_injector.containers import DeclarativeContainer
 from dependency_injector.providers import Configuration, Provider, Singleton, Resource
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 from app.resources.bybit import BybitWebSocket, BybitRest
 from app.resources.database import Database
@@ -38,3 +39,4 @@ class GatewaysContainer(DeclarativeContainer):
         RedisClient,
         password=config.redis.password
     )
+    scheduler = Resource(AsyncIOScheduler)

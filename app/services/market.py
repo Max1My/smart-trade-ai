@@ -74,11 +74,11 @@ class MarketService:
 
         :param currency: Валютная пара, например, "BTCUSDT".
         :param minutes: Интервал выборки в минутах (по умолчанию 5).
-        :param session: Сессия если вызвана из другого контекста
+        :param session: Сессия, если вызвана из другого контекста.
         :return: Экземпляр AggregatedMarketData с агрегированными данными.
         """
         time_threshold = datetime.datetime.utcnow() - datetime.timedelta(minutes=minutes)
-        async with self.db.session(session) as session:
+        async with self.db.session() as session:
             stmt = sa.select(Market).where(
                 Market.currency == currency,
                 Market.created >= time_threshold
@@ -91,9 +91,8 @@ class MarketService:
         # Группировка записей по типу (первая часть поля kind до первой точки).
         grouped = defaultdict(lambda: {"entries": [], "count": 0})
         for entry in market_entries.items:
-            # Предполагается, что entry.kind имеет формат: "orderbook.50.BTCUSDT", "kline.1.BTCUSDT", и т.д.
             kind_main = entry.kind.split('.')[0]
-            grouped[kind_main]["entries"].append(entry.data)
+            grouped[kind_main]["entries"].append(entry.model_dump())
             grouped[kind_main]["count"] += 1
 
         # Преобразуем сгруппированные данные в формат, подходящий для Pydantic-модели.
