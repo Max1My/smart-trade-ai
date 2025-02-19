@@ -1,5 +1,9 @@
 import enum
 
+TOP_20_SYMBOLS = (
+    "NEARUSDT",
+)
+
 
 class MarketKindEnums(enum.StrEnum):
     """."""

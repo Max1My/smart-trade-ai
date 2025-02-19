@@ -2,19 +2,13 @@ import asyncio
 import logging
 import time
 
+from app.enums.market import TOP_20_SYMBOLS
 from app.resources.bybit import BybitWebSocket
 from app.resources.redis_client import RedisClient
 from app.schemas.market import MarketCreateSchema
 from app.services.market import MarketService
 
 logger = logging.getLogger(__name__)
-
-TOP_20_SYMBOLS = [
-    "BTCUSDT", "ETHUSDT", "BNBUSDT", "XRPUSDT", "SOLUSDT",
-    "ADAUSDT", "DOGEUSDT", "MATICUSDT", "DOTUSDT", "LTCUSDT",
-    "AVAXUSDT", "LINKUSDT", "ATOMUSDT", "XMRUSDT",
-    "ETCUSDT", "BCHUSDT", "NEARUSDT", "APTUSDT", "FILUSDT"
-]
 
 
 class WebSocketService:

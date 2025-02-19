@@ -28,3 +28,25 @@ class TradeSchema(BaseSchema):
     status: str
     exit_price: float
     pnl: float
+
+
+class TradeCreateSchema(BaseSchema):
+    currency: str
+    opened: datetime.datetime
+    side: str
+    quantity: float
+    entry_price: float
+    leverage: float
+    stop_loss: float
+    take_profit: float
+    status: str
+    exit_price: float
+    pnl: float
+
+
+class TradeRecommendationsCreateSchema(BaseSchema):
+    currency: str
+    recommended: datetime.datetime
+    recommended_action: str
+    confidence: float
+    data: dict

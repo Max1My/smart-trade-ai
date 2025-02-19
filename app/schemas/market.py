@@ -18,3 +18,16 @@ class MarketCreateSchema(BaseSchema):
     currency: str
     kind: str
     data: dict
+
+
+class AggregatedGroup(BaseSchema):
+    """."""
+    entries: list[MarketSchema]
+    count: int
+
+
+class AggregatedMarketData(BaseSchema):
+    """."""
+    currency: str
+    time_range: str
+    grouped_data: dict[str, AggregatedGroup]

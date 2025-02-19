@@ -1,13 +1,17 @@
 """."""
+import datetime
 import logging
+from collections import defaultdict
 
 import sqlalchemy as sa
 from sqlalchemy.dialects.postgresql import insert
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.repositories.db import DBRepository
 from app.resources.database import Database
-from app.schemas.market import MarketSchema, MarketCreateSchema
+from app.schemas.market import MarketSchema, MarketCreateSchema, AggregatedGroup, AggregatedMarketData
 from app.models.market import Market
+from app.schemas.repository import RepositoryOutSchema
 
 logger = logging.getLogger(__name__)
 
@@ -57,3 +61,49 @@ class MarketService:
             # Выполняем запрос без использования scalars, так как он не возвращает строки.
             await session.execute(stmt)
             await session.commit()
+
+    async def get_aggregated_market_data(
+            self,
+            currency: str,
+            minutes: int = 5,
+            session: AsyncSession | None = None
+    ) -> AggregatedMarketData:
+        """
+        Извлекает и агрегирует данные из модели Market за последние `minutes` минут для указанной валютной пары,
+        группируя их по типу данных (первая часть поля `kind`).
+
+        :param currency: Валютная пара, например, "BTCUSDT".
+        :param minutes: Интервал выборки в минутах (по умолчанию 5).
+        :param session: Сессия, если вызвана из другого контекста.
+        :return: Экземпляр AggregatedMarketData с агрегированными данными.
+        """
+        time_threshold = datetime.datetime.utcnow() - datetime.timedelta(minutes=minutes)
+        async with self.db.session() as session:
+            stmt = sa.select(Market).where(
+                Market.currency == currency,
+                Market.created >= time_threshold
+            )
+            market_entries: RepositoryOutSchema[MarketSchema] = await self.repository.items(
+                session=session,
+                statement=stmt
+            )
+
+        # Группировка записей по типу (первая часть поля kind до первой точки).
+        grouped = defaultdict(lambda: {"entries": [], "count": 0})
+        for entry in market_entries.items:
+            kind_main = entry.kind.split('.')[0]
+            grouped[kind_main]["entries"].append(entry.model_dump())
+            grouped[kind_main]["count"] += 1
+
+        # Преобразуем сгруппированные данные в формат, подходящий для Pydantic-модели.
+        pydantic_grouped = {
+            key: AggregatedGroup(entries=value["entries"], count=value["count"])
+            for key, value in grouped.items()
+        }
+
+        aggregated_data = AggregatedMarketData(
+            currency=currency,
+            time_range=f"Последние {minutes} минут",
+            grouped_data=pydantic_grouped
+        )
+        return aggregated_data

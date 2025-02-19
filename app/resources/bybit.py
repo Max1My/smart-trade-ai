@@ -1,11 +1,51 @@
+import asyncio
+import logging
+
 from pybit.unified_trading import WebSocket
 from pybit.unified_trading import HTTP
+
+from websocket._exceptions import WebSocketConnectionClosedException
+
+logger = logging.getLogger(__name__)
 
 
 class BybitWebSocket:
     def __init__(self):
         """Инициализация WebSocket с нужным адресом"""
-        self.ws = WebSocket(testnet=True, channel_type="linear")
+        # Сохраняем ссылку на основной event loop
+        self.loop = asyncio.get_event_loop()
+        # Создаем исходное соединение
+        self.ws = WebSocket(testnet=False, channel_type="linear")
+        # Патчим метод send для безопасного вызова и реконнекта
+        self._patch_send()
+
+    def _patch_send(self):
+        """Оборачивает метод send объекта ws в безопасную функцию с реконнектом."""
+        original_send = self.ws.ws.send
+
+        def safe_send(data, *args, **kwargs):
+            try:
+                return original_send(data, *args, **kwargs)
+            except WebSocketConnectionClosedException:
+                logger.warning("Соединение закрыто. Инициирую реконнект.")
+                # Запускаем асинхронный реконнект через главный event loop
+                asyncio.run_coroutine_threadsafe(self.reconnect(), self.loop)
+                return None
+
+        self.ws.ws.send = safe_send
+
+    async def reconnect(self):
+        """Переподключается к WebSocket: закрывает старое соединение и создает новое."""
+        logger.info("Начало реконнекта к WebSocket...")
+        try:
+            self.ws.ws.close()
+        except Exception as e:
+            logger.error(f"Ошибка при закрытии старого соединения: {e}")
+        # Небольшая пауза перед созданием нового соединения
+        await asyncio.sleep(1)
+        self.ws = WebSocket(testnet=False, channel_type="linear")
+        self._patch_send()
+        logger.info("Реконнект выполнен успешно.")
 
     def subscribe_orderbook(self, symbol: str, callback, depth: int = 50):
         """Подписка на стакан"""
